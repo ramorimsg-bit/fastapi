@@ -24,6 +24,7 @@ apps/gym-trainer/
 │   ├── app/coach.py         Personal/nutricionista com IA
 │   ├── app/main.py          Endpoints
 │   └── tests/
+├── web/index.html       Versão web de demonstração (abre no navegador)
 └── ios/                     App SwiftUI para iPhone e Apple Watch
     ├── project.yml          Projeto XcodeGen (HealthKit, background delivery, workout-processing)
     ├── Shared/              Modelos compartilhados

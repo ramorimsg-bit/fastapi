@@ -1,0 +1,732 @@
+<title>GymTrainer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: coluna de app (máx. 560px) com barra de abas fixa embaixo; cores de anilha olímpica marcam as zonas de FC. */
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --surface-2: #f6f8fa; --ink: #16202b; --muted: #5b6878; --line: #d5dbe3;
+  --accent: #c8332b; --accent-ink: #ffffff; --accent-soft: #f8e3e1;
+  --plate-blue: #1f5fbf; --plate-yellow: #d9a400; --plate-green: #2e8b4e; --plate-red: #c8332b; --plate-grey: #7d8896;
+  --ok: #2e8b4e; --warn: #b7791f; --bad: #c8332b;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Source Sans 3", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f151c; --surface: #18212b; --surface-2: #1e2934; --ink: #e8edf2; --muted: #93a1b1; --line: #2a3644;
+  --accent: #e5534a; --accent-ink: #ffffff; --accent-soft: #3a1f1e;
+  --plate-blue: #4b8ae6; --plate-yellow: #e8bb2e; --plate-green: #4cb071; --plate-red: #e5534a; --plate-grey: #8d99a8;
+  --ok: #4cb071; --warn: #e0a64a; --bad: #e5534a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f151c; --surface: #18212b; --surface-2: #1e2934; --ink: #e8edf2; --muted: #93a1b1; --line: #2a3644;
+  --accent: #e5534a; --accent-ink: #ffffff; --accent-soft: #3a1f1e;
+  --plate-blue: #4b8ae6; --plate-yellow: #e8bb2e; --plate-green: #4cb071; --plate-red: #e5534a; --plate-grey: #8d99a8;
+  --ok: #4cb071; --warn: #e0a64a; --bad: #e5534a; color-scheme: dark }
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.app { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px calc(88px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 16px; }
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 28px; letter-spacing: .02em; text-transform: uppercase; line-height: 1; }
+.brand span { color: var(--accent); }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: 30px; line-height: 1.05; }
+h2 { font-size: 22px; text-transform: uppercase; letter-spacing: .04em; }
+h3 { font-size: 19px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.tiny { font-size: 12.5px; }
+.label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.num { font-variant-numeric: tabular-nums; }
+section.block { display: flex; flex-direction: column; gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.stack { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat { background: var(--surface-2); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat b { font-family: var(--display); font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat .tiny { color: var(--muted); }
+.list { display: flex; flex-direction: column; }
+.li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.li:last-child { border-bottom: 0; }
+.li span:last-child { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+button, .btn { font: inherit; font-weight: 700; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 10px 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.ghost { background: transparent; }
+button:disabled { opacity: .5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--plate-blue); outline-offset: 2px; }
+.full { width: 100%; }
+.banner { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); white-space: nowrap; }
+.pill.ok { color: var(--ok); border-color: var(--ok); }
+.pill.warn { color: var(--warn); border-color: var(--warn); }
+.pill.bad { color: var(--bad); border-color: var(--bad); }
+.alert { display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border-left: 4px solid var(--warn); font-size: 14.5px; }
+.alert.bad { border-left-color: var(--bad); }
+
+/* Abas */
+nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+nav.tabs .inner { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
+nav.tabs button { border: 0; border-radius: 0; background: transparent; flex-direction: column; gap: 2px; padding: 8px 2px 10px; font-size: 12px; color: var(--muted); }
+nav.tabs button svg { width: 24px; height: 24px; }
+nav.tabs button[aria-current="page"] { color: var(--accent); }
+
+/* Ficha */
+.daytabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.daytabs button { white-space: nowrap; padding: 8px 12px; font-size: 14px; }
+.daytabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.exitem { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); background: none; border-radius: 0; border-left: 0; border-right: 0; border-top: 0; text-align: left; font-weight: 400; width: 100%; }
+.exitem:last-child { border-bottom: 0; }
+.exnum { font-family: var(--display); font-size: 24px; font-weight: 800; color: var(--accent); text-align: center; }
+.exname { font-weight: 700; }
+.chev { color: var(--muted); font-size: 20px; }
+.zone { display: flex; height: 10px; border-radius: 99px; overflow: hidden; }
+.zone i { flex: 1; }
+.z1 { background: var(--plate-grey); } .z2 { background: var(--plate-green); } .z3 { background: var(--plate-yellow); } .z4 { background: var(--plate-blue); } .z5 { background: var(--plate-red); }
+.zrow { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; padding: 6px 0; }
+.zdot { width: 12px; height: 12px; border-radius: 50%; }
+
+/* Demonstração */
+.sheet { position: fixed; inset: 0; z-index: 40; background: var(--bg); overflow-y: auto; }
+.sheet .app { padding-block: calc(12px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)); }
+.steps { display: flex; flex-direction: column; gap: 8px; }
+.step { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; padding: 8px; border-radius: 10px; border: 1px solid transparent; background: none; text-align: left; font-weight: 400; width: 100%; }
+.step b { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); font-family: var(--display); font-size: 18px; }
+.step[aria-current="step"] { border-color: var(--accent); background: var(--accent-soft); }
+.step[aria-current="step"] b { background: var(--accent); color: var(--accent-ink); }
+.progress { height: 4px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--accent); width: 0; }
+.tempo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.tempo div { text-align: center; padding: 8px 4px; border-radius: 8px; background: var(--surface-2); transition: background .15s; }
+.tempo div b { display: block; font-family: var(--display); font-size: 22px; }
+.tempo div.on { background: var(--accent); color: var(--accent-ink); }
+.cues li { margin-bottom: 4px; }
+ul { margin: 0; padding-left: 20px; }
+
+/* Formulários */
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label { font-size: 13.5px; font-weight: 600; color: var(--muted); }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; width: 100%; min-width: 0; }
+.check { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; font-size: 14.5px; }
+.check input { width: 20px; height: 20px; margin-top: 2px; }
+details summary { cursor: pointer; font-weight: 700; }
+
+/* Treino ao vivo */
+.big { font-family: var(--display); font-size: 56px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.timer-ring { display: grid; place-items: center; padding: 10px; border-radius: var(--radius); background: var(--surface-2); }
+.stepper { display: grid; grid-template-columns: 44px 1fr 44px; gap: 6px; align-items: center; }
+.stepper b { text-align: center; font-family: var(--display); font-size: 26px; font-variant-numeric: tabular-nums; }
+.stepper button { padding: 8px 0; font-size: 20px; }
+
+/* Coach */
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.msg { padding: 10px 12px; border-radius: 14px; max-width: 88%; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15.5px; }
+.msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; }
+.msg.assistant { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips button { font-size: 13.5px; font-weight: 600; padding: 7px 10px; }
+.composer { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 700; z-index: 50; max-width: calc(100% - 32px); }
+@media (max-width: 380px) { .grid3 { grid-template-columns: 1fr 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">Gym<span>Trainer</span></div>
+    <span class="pill" id="syncPill">Carregando…</span>
+  </header>
+  <main id="view" class="stack" style="gap:16px"></main>
+</div>
+
+<nav class="tabs" aria-label="Seções">
+  <div class="inner" id="tabs"></div>
+</nav>
+<div id="sheet" class="sheet" hidden></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const DATA = {"ex":{"goblet_squat":{"n":"Agachamento goblet","p":"squat","m":["quadríceps","glúteos","core"],"q":"halter/kettlebell","l":1,"s":["Segure um halter na vertical junto ao peito, cotovelos apontando para baixo.","Pés na largura dos ombros, pontas levemente para fora (15-30°).","Inicie levando o quadril para trás e para baixo, joelhos acompanhando a direção dos pés.","Desça até as coxas ficarem ao menos paralelas ao chão, tronco ereto.","Empurre o chão com o pé inteiro e suba estendendo joelhos e quadril juntos."],"c":["Peito aberto","Joelhos para fora","Calcanhares no chão"],"x":["Joelhos caindo para dentro (valgo)","Tirar os calcanhares do chão","Arredondar a lombar no fundo"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-1-1-0","r":["knee_severe"],"a":["leg_press","box_squat"],"k":false,"met":null},"back_squat":{"n":"Agachamento livre com barra","p":"squat","m":["quadríceps","glúteos","adutores","eretores"],"q":"barra","l":2,"s":["Posicione a barra sobre o trapézio (barra alta) ou deltoide posterior (barra baixa).","Retire a barra do suporte, dê 2-3 passos para trás, pés na largura dos ombros.","Faça uma inspiração profunda e contraia o abdômen (bracing).","Desça controlando, quadril para trás e joelhos para fora, até a amplitude em que mantém a lombar neutra.","Suba empurrando o chão, mantendo o peito alto e a barra sobre o meio do pé."],"c":["Barra sobre o meio do pé","Bracing antes de cada repetição","Olhar neutro"],"x":["Perder a curvatura lombar (butt wink excessivo)","Inclinar o tronco demais","Subir o quadril antes do peito"],"b":"Inspire e trave o abdômen antes de descer; expire após passar o ponto mais difícil da subida.","t":"3-0-1-0","r":["lower_back","knee_severe","hypertension_uncontrolled"],"a":["leg_press","goblet_squat","hack_squat"],"k":false,"met":null},"leg_press":{"n":"Leg press 45°","p":"squat","m":["quadríceps","glúteos"],"q":"máquina","l":1,"s":["Sente-se com as costas e o quadril totalmente apoiados no encosto.","Pés no centro da plataforma, na largura dos ombros.","Destrave e desça a plataforma flexionando os joelhos até ~90° sem tirar o quadril do banco.","Empurre com o pé inteiro até quase estender os joelhos, sem travá-los."],"c":["Lombar sempre colada no encosto","Joelhos alinhados com os pés"],"x":["Travar os joelhos no final","Descer demais e descolar o quadril","Empurrar só com a ponta dos pés"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":["goblet_squat","hack_squat"],"k":false,"met":null},"hack_squat":{"n":"Agachamento hack","p":"squat","m":["quadríceps","glúteos"],"q":"máquina","l":2,"s":["Apoie costas e ombros nas almofadas, pés no centro da plataforma.","Destrave e desça até as coxas passarem do paralelo, se a mobilidade permitir.","Suba empurrando a plataforma com o pé inteiro."],"c":["Costas apoiadas o tempo todo","Descida controlada"],"x":["Tirar os calcanhares da plataforma","Encurtar a amplitude"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-0-1-0","r":["knee_severe"],"a":["leg_press"],"k":false,"met":null},"box_squat":{"n":"Agachamento no banco","p":"squat","m":["quadríceps","glúteos"],"q":"peso corporal/banco","l":1,"s":["Fique de costas para um banco na altura do joelho.","Braços estendidos à frente para equilíbrio.","Sente-se de forma controlada até tocar o banco sem relaxar.","Levante empurrando o chão com o pé inteiro."],"c":["Tocar o banco sem despencar","Peito aberto"],"x":["Despencar no banco","Usar impulso do tronco para levantar"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":["leg_press"],"k":false,"met":null},"bulgarian_split_squat":{"n":"Agachamento búlgaro","p":"lunge","m":["quadríceps","glúteos"],"q":"halteres/banco","l":2,"s":["Apoie o peito do pé de trás sobre um banco, perna da frente cerca de um passo à frente.","Segure halteres ao lado do corpo.","Desça o joelho de trás em direção ao chão, mantendo o tronco levemente inclinado.","Suba empurrando o chão com o calcanhar da perna da frente."],"c":["Peso no pé da frente","Joelho da frente alinhado com o pé"],"x":["Base estreita demais (perda de equilíbrio)","Empurrar com a perna de trás"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":["knee_severe","balance"],"a":["walking_lunge","leg_press"],"k":false,"met":null},"walking_lunge":{"n":"Afundo caminhando","p":"lunge","m":["quadríceps","glúteos"],"q":"halteres","l":1,"s":["Em pé com halteres ao lado do corpo, dê um passo largo à frente.","Desça até os dois joelhos formarem ~90°.","Empurre com a perna da frente e traga a de trás para o próximo passo."],"c":["Tronco ereto","Passo longo o suficiente"],"x":["Joelho da frente colapsando para dentro","Bater o joelho de trás no chão"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":["knee_severe","balance"],"a":["leg_press"],"k":false,"met":null},"leg_extension":{"n":"Cadeira extensora","p":"isolation_legs","m":["quadríceps"],"q":"máquina","l":1,"s":["Ajuste o encosto para o joelho ficar alinhado ao eixo da máquina.","Rolo apoiado logo acima do tornozelo.","Estenda os joelhos até quase a extensão completa e segure 1 s.","Retorne controlando."],"c":["Segure os pegadores e mantenha o quadril no banco"],"x":["Usar impulso","Descer o peso de forma descontrolada"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":["leg_press"],"k":false,"met":null},"leg_curl":{"n":"Mesa/cadeira flexora","p":"isolation_legs","m":["isquiotibiais"],"q":"máquina","l":1,"s":["Ajuste a máquina para o joelho ficar alinhado ao eixo.","Rolo logo acima do calcanhar.","Flexione os joelhos trazendo o calcanhar em direção ao glúteo.","Retorne lentamente."],"c":["Quadril colado no banco"],"x":["Levantar o quadril","Amplitude curta"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-0-1-1","r":[],"a":["romanian_deadlift"],"k":false,"met":null},"calf_raise":{"n":"Panturrilha em pé","p":"calves","m":["gastrocnêmio","sóleo"],"q":"máquina/step","l":1,"s":["Apoie a parte da frente dos pés em um degrau, calcanhares livres.","Desça os calcanhares até alongar bem a panturrilha (pausa de 1-2 s).","Suba na ponta dos pés o máximo possível e contraia 1 s."],"c":["Amplitude completa","Pausa no alongamento"],"x":["Quicar no fundo","Flexionar os joelhos para ajudar"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-2-1-1","r":[],"a":[],"k":false,"met":null},"romanian_deadlift":{"n":"Levantamento terra romeno","p":"hinge","m":["isquiotibiais","glúteos","eretores"],"q":"barra/halteres","l":2,"s":["Em pé, segure a barra na frente das coxas, pés na largura do quadril.","Joelhos levemente flexionados e fixos.","Leve o quadril para trás deslizando a barra rente às coxas até sentir alongar os posteriores.","Retorne contraindo glúteos e empurrando o quadril para frente."],"c":["Coluna neutra","Barra colada no corpo","Movimento vem do quadril"],"x":["Arredondar as costas","Flexionar demais os joelhos (vira agachamento)","Barra longe do corpo"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-0-1-0","r":["lower_back"],"a":["hip_thrust","leg_curl"],"k":false,"met":null},"deadlift":{"n":"Levantamento terra convencional","p":"hinge","m":["posterior de coxa","glúteos","eretores","trapézio"],"q":"barra","l":3,"s":["Barra sobre o meio do pé, pés na largura do quadril.","Segure a barra por fora das pernas, canelas tocando a barra.","Peito para cima, costas neutras, ombros levemente à frente da barra.","Faça o bracing e empurre o chão, mantendo a barra colada às pernas.","Finalize em pé com glúteos contraídos, sem hiperestender a lombar."],"c":["Empurre o chão","Barra raspando nas pernas","Lats ativados (ombros para trás)"],"x":["Puxar com as costas arredondadas","Quadril subir antes dos ombros","Hiperestender no topo"],"b":"Inspire e trave o abdômen antes de cada repetição; expire no topo.","t":"2-1-1-0","r":["lower_back","hypertension_uncontrolled"],"a":["romanian_deadlift","hip_thrust"],"k":false,"met":null},"hip_thrust":{"n":"Elevação pélvica (hip thrust)","p":"hinge","m":["glúteos","isquiotibiais"],"q":"barra/banco","l":1,"s":["Apoie a parte de cima das costas (escápulas) em um banco, barra sobre o quadril (use protetor).","Pés apoiados, joelhos a ~90° no topo.","Eleve o quadril até o tronco ficar alinhado com as coxas, contraindo glúteos por 1 s.","Desça controlando."],"c":["Queixo em direção ao peito","Costelas para baixo","Contração máxima no topo"],"x":["Hiperestender a lombar","Pés longe demais (ativa posteriores em excesso)"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-2","r":[],"a":["glute_bridge"],"k":false,"met":null},"glute_bridge":{"n":"Ponte de glúteo","p":"hinge","m":["glúteos"],"q":"peso corporal","l":1,"s":["Deitado de barriga para cima, joelhos flexionados, pés no chão.","Eleve o quadril contraindo os glúteos até alinhar ombros, quadril e joelhos.","Segure 2 s e desça."],"c":["Contração do glúteo, não da lombar"],"x":["Arquear a lombar"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-2","r":[],"a":[],"k":false,"met":null},"bench_press":{"n":"Supino reto com barra","p":"push_h","m":["peitoral","tríceps","deltoide anterior"],"q":"barra","l":2,"s":["Deite com os olhos sob a barra, pés firmes no chão.","Retraia e deprima as escápulas, formando um leve arco torácico.","Pegada um pouco mais larga que os ombros.","Desça a barra até a linha dos mamilos com cotovelos a ~45-70° do tronco.","Empurre a barra para cima e levemente em direção aos ombros."],"c":["Escápulas travadas","Punhos alinhados aos antebraços","Pés no chão"],"x":["Quicar a barra no peito","Abrir os cotovelos a 90°","Tirar o quadril do banco"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":["shoulder"],"a":["dumbbell_press","machine_chest_press","push_up"],"k":false,"met":null},"dumbbell_press":{"n":"Supino reto com halteres","p":"push_h","m":["peitoral","tríceps","deltoide anterior"],"q":"halteres","l":1,"s":["Deite no banco com um halter em cada mão sobre o peito.","Escápulas retraídas, cotovelos a ~45° do tronco.","Desça até sentir alongar o peitoral, halteres na linha do peito.","Empurre para cima aproximando os halteres no topo."],"c":["Controle na descida","Punhos firmes"],"x":["Descer rápido demais","Bater os halteres no topo"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-0-1-0","r":[],"a":["machine_chest_press","push_up"],"k":false,"met":null},"incline_dumbbell_press":{"n":"Supino inclinado com halteres","p":"push_h","m":["peitoral superior","deltoide anterior","tríceps"],"q":"halteres","l":1,"s":["Ajuste o banco a 30-45°.","Halteres sobre a parte superior do peito, escápulas retraídas.","Desça até a linha da clavícula e empurre de volta."],"c":["Inclinação moderada (30°) para focar peitoral"],"x":["Banco muito inclinado (vira desenvolvimento)"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-0-1-0","r":["shoulder"],"a":["machine_chest_press"],"k":false,"met":null},"machine_chest_press":{"n":"Supino máquina","p":"push_h","m":["peitoral","tríceps"],"q":"máquina","l":1,"s":["Ajuste o banco para os pegadores ficarem na linha do peito.","Costas apoiadas, escápulas retraídas.","Empurre até quase estender os cotovelos e retorne controlando."],"c":["Ombros para baixo e para trás"],"x":["Projetar os ombros para frente"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":["push_up"],"k":false,"met":null},"push_up":{"n":"Flexão de braços","p":"push_h","m":["peitoral","tríceps","core"],"q":"peso corporal","l":1,"s":["Mãos um pouco mais largas que os ombros, corpo em linha reta da cabeça aos pés.","Desça o peito até perto do chão, cotovelos a ~45°.","Empurre o chão voltando à posição inicial. Iniciantes: apoie os joelhos ou faça no banco."],"c":["Abdômen e glúteos contraídos","Corpo como uma prancha"],"x":["Quadril caindo","Cabeça projetada à frente"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":[],"k":false,"met":null},"cable_fly":{"n":"Crucifixo no cabo (crossover)","p":"isolation_chest","m":["peitoral"],"q":"polia","l":1,"s":["Polias na altura dos ombros, um passo à frente, cotovelos levemente flexionados.","Abra os braços até sentir alongar o peito.","Junte as mãos à frente do peito em um arco, contraindo 1 s."],"c":["Cotovelos fixos levemente flexionados"],"x":["Transformar em supino (flexionar demais os cotovelos)"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":["shoulder"],"a":["machine_chest_press"],"k":false,"met":null},"lat_pulldown":{"n":"Puxada frontal (pulldown)","p":"pull_v","m":["latíssimo","bíceps","romboides"],"q":"polia","l":1,"s":["Sente-se com as coxas presas sob o apoio, pegada um pouco mais larga que os ombros.","Incline levemente o tronco para trás (~10-15°).","Puxe a barra até a parte superior do peito levando os cotovelos para baixo e para trás.","Retorne até estender os braços, sentindo alongar as costas."],"c":["Inicie o movimento descendo as escápulas","Peito em direção à barra"],"x":["Puxar atrás da nuca","Balançar o tronco","Amplitude curta"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":["assisted_pull_up"],"k":false,"met":null},"pull_up":{"n":"Barra fixa","p":"pull_v","m":["latíssimo","bíceps","core"],"q":"barra fixa","l":3,"s":["Segure a barra com pegada pronada, um pouco mais larga que os ombros.","A partir dos braços estendidos, deprima as escápulas e puxe até o queixo passar a barra.","Desça controlando até estender os braços."],"c":["Corpo estável, sem balanço"],"x":["Kipping (impulso)","Meia repetição"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-0-1-1","r":["shoulder"],"a":["lat_pulldown","assisted_pull_up"],"k":false,"met":null},"assisted_pull_up":{"n":"Barra fixa assistida (graviton)","p":"pull_v","m":["latíssimo","bíceps"],"q":"máquina","l":1,"s":["Ajoelhe-se na plataforma e segure as alças.","Puxe até o queixo passar as alças, depois desça controlando.","Quanto mais peso na máquina, mais assistência."],"c":["Escápulas para baixo primeiro"],"x":["Descer sem controle"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":["lat_pulldown"],"k":false,"met":null},"seated_row":{"n":"Remada sentada no cabo","p":"pull_h","m":["dorsais","romboides","trapézio médio","bíceps"],"q":"polia","l":1,"s":["Sente-se com os pés apoiados e joelhos levemente flexionados, tronco ereto.","Puxe o triângulo até o abdômen, levando os cotovelos para trás e juntando as escápulas.","Retorne estendendo os braços sem arredondar as costas."],"c":["Peito alto","Escápulas se aproximam no final"],"x":["Balançar o tronco para frente e para trás","Encolher os ombros"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":["machine_row","dumbbell_row"],"k":false,"met":null},"dumbbell_row":{"n":"Remada unilateral com halter","p":"pull_h","m":["dorsais","romboides","bíceps"],"q":"halter/banco","l":1,"s":["Apoie joelho e mão do mesmo lado em um banco, costas paralelas ao chão.","Puxe o halter em direção ao quadril, cotovelo próximo ao corpo.","Desça até estender o braço, alongando as costas."],"c":["Coluna neutra","Puxe com o cotovelo"],"x":["Girar o tronco","Puxar com o bíceps"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":["machine_row","seated_row"],"k":false,"met":null},"machine_row":{"n":"Remada máquina com apoio no peito","p":"pull_h","m":["dorsais","romboides"],"q":"máquina","l":1,"s":["Apoie o peito na almofada, segure os pegadores.","Puxe levando cotovelos para trás e juntando as escápulas.","Retorne controlando."],"c":["Peito sempre apoiado"],"x":["Tirar o peito do apoio"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":["seated_row"],"k":false,"met":null},"barbell_row":{"n":"Remada curvada com barra","p":"pull_h","m":["dorsais","romboides","eretores"],"q":"barra","l":2,"s":["Segure a barra com pegada pronada, incline o tronco a ~45° com coluna neutra.","Puxe a barra até o umbigo, cotovelos para trás.","Desça controlando."],"c":["Coluna neutra","Tronco estável"],"x":["Usar impulso do quadril","Arredondar as costas"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":["lower_back"],"a":["machine_row","seated_row"],"k":false,"met":null},"face_pull":{"n":"Face pull","p":"pull_h","m":["deltoide posterior","manguito rotador","trapézio médio"],"q":"polia/corda","l":1,"s":["Polia na altura dos olhos com corda.","Puxe a corda em direção ao rosto, separando as mãos e girando os ombros para fora.","Segure 1 s e retorne."],"c":["Cotovelos altos","Rotação externa no final"],"x":["Usar peso excessivo"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":[],"k":false,"met":null},"dumbbell_shoulder_press":{"n":"Desenvolvimento com halteres","p":"push_v","m":["deltoides","tríceps"],"q":"halteres","l":1,"s":["Sentado com encosto, halteres na altura dos ombros, palmas para frente.","Empurre para cima até quase estender os cotovelos.","Desça até a altura das orelhas/ombros."],"c":["Abdômen firme, lombar no encosto"],"x":["Arquear a lombar","Descer demais com dor"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":["shoulder","hypertension_uncontrolled"],"a":["lateral_raise","landmine_press"],"k":false,"met":null},"landmine_press":{"n":"Desenvolvimento landmine","p":"push_v","m":["deltoide anterior","peitoral superior","tríceps"],"q":"barra/landmine","l":2,"s":["Segure a ponta da barra apoiada no landmine na altura do ombro.","Empurre para cima e para frente até estender o braço.","Retorne controlando."],"c":["Opção amigável para ombros sensíveis"],"x":["Girar o tronco"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":[],"k":false,"met":null},"lateral_raise":{"n":"Elevação lateral","p":"isolation_shoulder","m":["deltoide lateral"],"q":"halteres","l":1,"s":["Em pé, halteres ao lado do corpo, cotovelos levemente flexionados.","Eleve os braços lateralmente até a altura dos ombros, mãos levemente à frente do corpo.","Desça controlando em 2-3 s."],"c":["Lidere com os cotovelos","Ombros longe das orelhas"],"x":["Usar impulso","Subir acima dos ombros encolhendo o trapézio"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-0-1-0","r":[],"a":[],"k":false,"met":null},"dumbbell_curl":{"n":"Rosca direta com halteres","p":"isolation_arms","m":["bíceps"],"q":"halteres","l":1,"s":["Em pé, halteres ao lado do corpo, palmas para frente.","Flexione os cotovelos sem movê-los para frente.","Desça até estender totalmente os braços."],"c":["Cotovelos fixos ao lado do tronco"],"x":["Balançar o corpo","Encurtar a descida"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-0-1-0","r":[],"a":[],"k":false,"met":null},"hammer_curl":{"n":"Rosca martelo","p":"isolation_arms","m":["braquial","braquiorradial","bíceps"],"q":"halteres","l":1,"s":["Halteres com pegada neutra (palmas voltadas para o corpo).","Flexione os cotovelos mantendo a pegada neutra.","Desça controlando."],"c":["Punho neutro"],"x":["Impulso do tronco"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":[],"k":false,"met":null},"triceps_pushdown":{"n":"Tríceps na polia (pushdown)","p":"isolation_arms","m":["tríceps"],"q":"polia","l":1,"s":["De frente para a polia alta, cotovelos colados ao tronco.","Estenda os cotovelos empurrando a barra/corda para baixo.","Retorne até ~90° sem mover os cotovelos."],"c":["Cotovelos fixos"],"x":["Inclinar o tronco sobre a carga","Abrir os cotovelos"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":[],"a":[],"k":false,"met":null},"overhead_triceps_extension":{"n":"Tríceps francês com halter","p":"isolation_arms","m":["tríceps (cabeça longa)"],"q":"halter","l":1,"s":["Sentado, segure um halter com as duas mãos acima da cabeça.","Desça o halter atrás da cabeça flexionando os cotovelos.","Estenda os cotovelos voltando ao início."],"c":["Cotovelos apontando para frente"],"x":["Abrir os cotovelos","Arquear a lombar"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":["shoulder"],"a":["triceps_pushdown"],"k":false,"met":null},"plank":{"n":"Prancha frontal","p":"core","m":["reto abdominal","transverso","glúteos"],"q":"peso corporal","l":1,"s":["Apoie antebraços e pontas dos pés, cotovelos sob os ombros.","Mantenha o corpo alinhado da cabeça aos calcanhares.","Contraia abdômen e glúteos e segure pelo tempo prescrito."],"c":["Costelas para baixo","Glúteos contraídos"],"x":["Quadril alto ou caído","Prender a respiração"],"b":"Respire de forma contínua e curta, sem prender o ar (evita picos de pressão).","t":"isometria","r":["hypertension_uncontrolled"],"a":["dead_bug"],"k":false,"met":null},"dead_bug":{"n":"Dead bug","p":"core","m":["transverso","reto abdominal"],"q":"peso corporal","l":1,"s":["Deitado de costas, braços para o teto e joelhos a 90° sobre o quadril.","Pressione a lombar contra o chão.","Estenda braço e perna opostos lentamente sem a lombar descolar, retorne e alterne."],"c":["Lombar colada ao chão"],"x":["Movimento rápido","Arquear a lombar"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"3-0-3-0","r":[],"a":[],"k":false,"met":null},"pallof_press":{"n":"Pallof press","p":"core","m":["oblíquos","transverso"],"q":"polia/elástico","l":1,"s":["De lado para a polia na altura do peito, segure o pegador junto ao esterno.","Estenda os braços à frente resistindo à rotação do tronco.","Segure 2 s e retorne."],"c":["Quadril e ombros voltados para frente"],"x":["Deixar o tronco girar"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-2-2-0","r":[],"a":[],"k":false,"met":null},"cable_crunch":{"n":"Abdominal na polia","p":"core","m":["reto abdominal"],"q":"polia/corda","l":2,"s":["Ajoelhado de frente para a polia alta, corda ao lado da cabeça.","Flexione a coluna aproximando as costelas do quadril.","Retorne controlando."],"c":["Movimento vem do abdômen"],"x":["Puxar com os braços","Sentar sobre os calcanhares"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"2-0-1-1","r":["lower_back"],"a":["dead_bug"],"k":false,"met":null},"treadmill_walk":{"n":"Caminhada na esteira","p":"cardio","m":["sistema cardiorrespiratório"],"q":"esteira","l":1,"s":["Comece com 3-5 min de aquecimento a 4-5 km/h.","Ajuste velocidade/inclinação para ficar na zona de FC prescrita.","Passadas naturais, braços balançando, sem segurar no corrimão.","Termine com 3-5 min de desaquecimento."],"c":["Postura ereta","Respiração ritmada (teste da fala: consegue conversar na Z2)"],"x":["Segurar no corrimão (reduz o gasto calórico real)"],"b":"Respiração nasal/ritmada; na Z2 você deve conseguir falar frases completas.","t":"contínuo","r":[],"a":[],"k":true,"met":"treadmill_walk"},"treadmill_incline_walk":{"n":"Caminhada inclinada na esteira","p":"cardio","m":["sistema cardiorrespiratório","glúteos","panturrilhas"],"q":"esteira","l":1,"s":["Aqueça 3-5 min no plano.","Aumente a inclinação para 6-12% a 4,5-5,5 km/h.","Mantenha a FC na zona prescrita sem segurar no corrimão."],"c":["Passos curtos","Tronco levemente inclinado à frente"],"x":["Segurar no painel"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"contínuo","r":["knee_severe"],"a":["bike"],"k":true,"met":"treadmill_incline_walk"},"treadmill_run":{"n":"Corrida na esteira","p":"cardio","m":["sistema cardiorrespiratório"],"q":"esteira","l":2,"s":["Aqueça 5 min caminhando/trotando.","Corra na velocidade que mantém a zona de FC prescrita; use 1% de inclinação para simular a rua.","Passada curta, aterrissando com o pé sob o quadril (cadência ~160-180 passos/min)."],"c":["Ombros relaxados","Cadência alta"],"x":["Passada longa batendo o calcanhar à frente do corpo"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"contínuo","r":["knee_severe","obesity_high_impact"],"a":["bike","elliptical"],"k":true,"met":"treadmill_run"},"bike":{"n":"Bicicleta ergométrica","p":"cardio","m":["sistema cardiorrespiratório","quadríceps"],"q":"bike","l":1,"s":["Ajuste o banco: com o pedal embaixo, o joelho fica levemente flexionado (~25-30°).","Aqueça 3-5 min com carga leve.","Ajuste carga e cadência (80-95 rpm) para manter a zona de FC."],"c":["Quadril estável no banco"],"x":["Banco baixo demais (sobrecarga no joelho)"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"contínuo","r":[],"a":[],"k":true,"met":"bike_moderate"},"elliptical":{"n":"Elíptico (transport)","p":"cardio","m":["sistema cardiorrespiratório"],"q":"elíptico","l":1,"s":["Suba com cuidado, pés inteiros nos pedais.","Use braços e pernas de forma coordenada.","Ajuste a resistência para manter a zona de FC."],"c":["Tronco ereto","Calcanhares apoiados"],"x":["Apoiar o peso nos braços"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"contínuo","r":[],"a":[],"k":true,"met":"elliptical_moderate"},"rower":{"n":"Remo ergômetro","p":"cardio","m":["sistema cardiorrespiratório","costas","pernas"],"q":"remo","l":2,"s":["Sequência da puxada: pernas → tronco → braços.","Retorno: braços → tronco → pernas.","Mantenha 20-28 remadas/min na zona prescrita."],"c":["70% da força vem das pernas"],"x":["Puxar só com os braços","Arredondar a lombar"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"contínuo","r":["lower_back"],"a":["bike"],"k":true,"met":"rower_moderate"},"stair_climber":{"n":"Escada (simulador)","p":"cardio","m":["sistema cardiorrespiratório","glúteos"],"q":"escada","l":2,"s":["Suba degrau por degrau com o pé inteiro.","Mantenha a zona de FC sem apoiar o peso no corrimão."],"c":["Tronco ereto"],"x":["Debruçar sobre o painel"],"b":"Expire na fase concêntrica (esforço) e inspire na excêntrica (retorno).","t":"contínuo","r":["knee_severe","obesity_high_impact"],"a":["bike"],"k":true,"met":"stair_climber"}},"tpl":{"Full body A":[["back_squat","goblet_squat","leg_press","box_squat"],["bench_press","dumbbell_press","machine_chest_press","push_up"],["seated_row","machine_row","dumbbell_row"],["romanian_deadlift","hip_thrust","glute_bridge"],["lateral_raise"],["dead_bug","pallof_press"]],"Full body B":[["leg_press","goblet_squat","box_squat"],["lat_pulldown","assisted_pull_up"],["incline_dumbbell_press","machine_chest_press","push_up"],["hip_thrust","glute_bridge"],["leg_curl"],["face_pull"],["plank","dead_bug"]],"Superiores A":[["bench_press","dumbbell_press","machine_chest_press"],["barbell_row","seated_row","machine_row"],["dumbbell_shoulder_press","landmine_press","lateral_raise"],["lat_pulldown","assisted_pull_up"],["dumbbell_curl"],["triceps_pushdown"]],"Inferiores A":[["back_squat","hack_squat","leg_press","box_squat"],["romanian_deadlift","hip_thrust"],["bulgarian_split_squat","walking_lunge","leg_press"],["leg_curl"],["calf_raise"],["pallof_press","dead_bug"]],"Superiores B":[["pull_up","lat_pulldown","assisted_pull_up"],["incline_dumbbell_press","machine_chest_press"],["dumbbell_row","machine_row"],["lateral_raise"],["face_pull"],["hammer_curl"],["overhead_triceps_extension","triceps_pushdown"]],"Inferiores B":[["deadlift","romanian_deadlift","hip_thrust"],["leg_press","goblet_squat"],["hip_thrust","glute_bridge"],["leg_extension"],["leg_curl"],["calf_raise"],["cable_crunch","dead_bug"]],"Push (empurrar)":[["bench_press","dumbbell_press","machine_chest_press"],["dumbbell_shoulder_press","landmine_press"],["incline_dumbbell_press","machine_chest_press"],["cable_fly","machine_chest_press"],["lateral_raise"],["triceps_pushdown"],["overhead_triceps_extension","triceps_pushdown"]],"Pull (puxar)":[["pull_up","lat_pulldown","assisted_pull_up"],["barbell_row","seated_row"],["dumbbell_row","machine_row"],["face_pull"],["dumbbell_curl"],["hammer_curl"]],"Legs (pernas)":[["back_squat","hack_squat","leg_press"],["romanian_deadlift","hip_thrust"],["leg_press","bulgarian_split_squat"],["leg_extension"],["leg_curl"],["calf_raise"],["cable_crunch","plank"]]}};
+const EX = DATA.ex, TPL = DATA.tpl;
+
+/* ------------------------------------------------------------------ Ciência (mesmas equações do backend) */
+const ACTIVITY = { sedentary: 1.2, light: 1.375, moderate: 1.55, very_active: 1.725, extra_active: 1.9 };
+const MET = { strength_light: 3.5, strength_moderate: 5.0, strength_vigorous: 6.0, treadmill_walk: 4.3, treadmill_incline_walk: 6.0, treadmill_run: 9.8, bike_moderate: 6.8, bike_vigorous: 8.8, elliptical_moderate: 5.0, elliptical_vigorous: 9.0, rower_moderate: 7.0, stair_climber: 9.0, hiit: 8.0 };
+const r1 = x => Math.round(x * 10) / 10;
+const ageOf = b => { const d = new Date(b), t = new Date(); let a = t.getFullYear() - d.getFullYear(); if (t.getMonth() < d.getMonth() || (t.getMonth() === d.getMonth() && t.getDate() < d.getDate())) a--; return a; };
+const bmi = (w, h) => r1(w / ((h / 100) ** 2));
+const bmiCat = v => v < 18.5 ? "Abaixo do peso" : v < 25 ? "Eutrófico" : v < 30 ? "Sobrepeso" : v < 35 ? "Obesidade grau I" : v < 40 ? "Obesidade grau II" : "Obesidade grau III";
+const jp7 = (s, a, sex) => sex === "male" ? 1.112 - 0.00043499 * s + 0.00000055 * s * s - 0.00028826 * a : 1.097 - 0.00046971 * s + 0.00000056 * s * s - 0.00012828 * a;
+const jp3 = (s, a, sex) => sex === "male" ? 1.10938 - 0.0008267 * s + 0.0000016 * s * s - 0.0002574 * a : 1.0994921 - 0.0009929 * s + 0.0000023 * s * s - 0.0001392 * a;
+const siri = d => r1(495 / d - 450);
+function navy(sex, h, neck, waist, hip) {
+  const i = 1 / 2.54; const L = Math.log10;
+  return r1(sex === "male" ? 86.010 * L(waist * i - neck * i) - 70.041 * L(h * i) + 36.76 : 163.205 * L((waist + hip - neck) * i) - 97.684 * L(h * i) - 78.387);
+}
+function bfCat(bf, sex) {
+  const lim = sex === "male" ? [[6, "Gordura essencial"], [14, "Atleta"], [18, "Fitness"], [25, "Média"]] : [[14, "Gordura essencial"], [21, "Atleta"], [25, "Fitness"], [32, "Média"]];
+  for (const [l, n] of lim) if (bf < l) return n; return "Acima do recomendado";
+}
+const waistRisk = (w, sex) => { const [hi, vh] = sex === "male" ? [94, 102] : [80, 88]; return w >= vh ? "Risco muito aumentado" : w >= hi ? "Risco aumentado" : "Adequada"; };
+const mifflin = (w, h, a, sex) => Math.round(10 * w + 6.25 * h - 5 * a + (sex === "male" ? 5 : -161));
+const katch = lean => Math.round(370 + 21.6 * lean);
+const hrMax = a => Math.round(208 - 0.7 * a);
+function zones(age, rest) {
+  const mx = hrMax(age), res = mx - rest, at = p => Math.round(rest + res * p);
+  return [
+    { k: "z1", name: "Z1 Recuperação", pct: "50-60%", lo: at(.5), hi: at(.6) },
+    { k: "z2", name: "Z2 Aeróbio base", pct: "60-70%", lo: at(.6), hi: at(.7) },
+    { k: "z3", name: "Z3 Aeróbio moderado", pct: "70-80%", lo: at(.7), hi: at(.8) },
+    { k: "z4", name: "Z4 Limiar", pct: "80-90%", lo: at(.8), hi: at(.9) },
+    { k: "z5", name: "Z5 VO2máx", pct: "90-100%", lo: at(.9), hi: mx },
+  ];
+}
+const kcalHR = (hr, w, a, sex, min) => r1(Math.max(sex === "male" ? -55.0969 + 0.6309 * hr + 0.1988 * w + 0.2017 * a : -20.4022 + 0.4472 * hr - 0.1263 * w + 0.074 * a, 0) / 4.184 * min);
+const kcalMET = (met, w, min) => r1(met * 3.5 * w / 200 * min);
+function nutrition(tdee, w, goal, lean) {
+  const f = { fat_loss: .8, hypertrophy: 1.1, strength: 1.05 }[goal] || 1;
+  const kcal = Math.round(tdee * f);
+  let protein = Math.round((goal === "fat_loss" ? 2.0 : 1.8) * w);
+  if (lean && goal === "fat_loss") protein = Math.max(protein, Math.round(2.3 * lean));
+  const fat = Math.round(Math.max(.9 * w, kcal * .2 / 9));
+  const carbs = Math.round(Math.max((kcal - protein * 4 - fat * 9) / 4, 0));
+  return { kcal, protein, carbs, fat, water: Math.round(35 * w), fiber: Math.round(kcal / 1000 * 14) };
+}
+function bpClass(s, d) {
+  if (s >= 180 || d >= 110) return "Hipertensão estágio 3";
+  if (s >= 160 || d >= 100) return "Hipertensão estágio 2";
+  if (s >= 140 || d >= 90) return "Hipertensão estágio 1";
+  if (s >= 130 || d >= 85) return "Pré-hipertensão";
+  if (s >= 120 || d >= 80) return "Normal";
+  return "Ótima";
+}
+
+/* ------------------------------------------------------------------ Avaliação */
+function evaluate(p, a, prev) {
+  const age = ageOf(p.birth), sex = p.sex, sf = a.sf || {}, c = a.circ || {}, ex = a.exams || {};
+  const seven = ["chest", "midaxillary", "triceps", "subscapular", "abdominal", "suprailiac", "thigh"].map(k => sf[k]);
+  const three = (sex === "male" ? ["chest", "abdominal", "thigh"] : ["triceps", "suprailiac", "thigh"]).map(k => sf[k]);
+  const has = arr => arr.every(v => typeof v === "number" && !isNaN(v));
+  let bf = null, method = null;
+  if (has(seven)) { bf = siri(jp7(seven.reduce((x, y) => x + y), age, sex)); method = "Jackson & Pollock 7 dobras + Siri"; }
+  else if (has(three)) { bf = siri(jp3(three.reduce((x, y) => x + y), age, sex)); method = "Jackson & Pollock 3 dobras + Siri"; }
+  else if (c.neck && c.waist && (sex === "male" || c.hip)) { bf = navy(sex, p.height, c.neck, c.waist, c.hip); method = "Circunferências (Marinha dos EUA)"; }
+  const B = bmi(a.weight, p.height);
+  const comp = { bmi: B, bmiCat: bmiCat(B), bf, method };
+  if (bf != null) { comp.fat = r1(a.weight * bf / 100); comp.lean = r1(a.weight - comp.fat); comp.bfCat = bfCat(bf, sex); }
+  if (c.waist) { comp.waistRisk = waistRisk(c.waist, sex); if (c.hip) { comp.whr = Math.round(c.waist / c.hip * 100) / 100; comp.whrRisk = comp.whr > (sex === "male" ? .9 : .85) ? "Risco cardiometabólico elevado" : "Adequada"; } }
+
+  const alerts = [], restr = new Set(); let clearance = Object.values(a.parq || {}).some(Boolean);
+  if (clearance) alerts.push({ lvl: "bad", t: "PAR-Q positivo: apresente liberação médica antes de treinos de alta intensidade." });
+  if (ex.sys && ex.dia) {
+    alerts.push({ lvl: ex.sys >= 140 || ex.dia >= 90 ? "bad" : "warn", t: `Pressão ${ex.sys}/${ex.dia} mmHg: ${bpClass(ex.sys, ex.dia)}.` });
+    if (ex.sys >= 160 || ex.dia >= 100) { restr.add("hypertension_uncontrolled"); clearance = true; alerts.push({ lvl: "bad", t: "Evite prender a respiração no esforço, isometrias longas e cargas máximas. Intensidade moderada." }); }
+    if (ex.sys >= 200 || ex.dia >= 110) alerts.push({ lvl: "bad", t: "Pressão de repouso muito elevada: não treine hoje e procure um médico." });
+  }
+  const g = ex.glucose || 0, h = ex.hba1c || 0;
+  if (g >= 126 || h >= 6.5) { alerts.push({ lvl: "bad", t: "Glicemia/HbA1c na faixa de diabetes: meça a glicemia antes e depois do treino e leve carboidrato de rápida absorção." }); clearance = true; }
+  else if (g >= 100 || h >= 5.7) alerts.push({ lvl: "warn", t: "Glicemia/HbA1c na faixa de pré-diabetes: musculação + aeróbio melhoram a sensibilidade à insulina." });
+  if (ex.ldl >= 160) alerts.push({ lvl: "warn", t: "LDL elevado: priorize aeróbio regular (150+ min/semana) e fibras solúveis." });
+  if (ex.hdl && ex.hdl < (sex === "male" ? 40 : 50)) alerts.push({ lvl: "warn", t: "HDL baixo: aeróbio e redução de gordura abdominal tendem a elevá-lo." });
+  if (ex.tg >= 150) alerts.push({ lvl: "warn", t: "Triglicerídeos elevados: reduza açúcares e álcool e mantenha aeróbio frequente." });
+  if (ex.vitd != null && ex.vitd < 20) alerts.push({ lvl: "warn", t: "Vitamina D baixa: converse com seu médico sobre suplementação." });
+  const inj = { knee: "knee_severe", lower_back: "lower_back", shoulder: "shoulder" };
+  (p.injuries || []).forEach(i => restr.add(inj[i]));
+  if (B >= 35) { restr.add("obesity_high_impact"); alerts.push({ lvl: "warn", t: "IMC ≥ 35: cardio de baixo impacto (bike, elíptico, caminhada inclinada) para proteger as articulações." }); }
+  if (age >= 65) restr.add("balance");
+
+  const bmr = comp.lean ? katch(comp.lean) : mifflin(a.weight, p.height, age, sex);
+  const tdee = Math.round(bmr * ACTIVITY[p.activity]);
+  const rest = ex.rhr || 70;
+  const next = new Date(a.date + "T12:00:00"); next.setDate(next.getDate() + 60);
+  const res = {
+    comp, alerts, restrictions: [...restr], clearance,
+    energy: { bmr, bmrMethod: comp.lean ? "Katch-McArdle" : "Mifflin-St Jeor", tdee },
+    nutrition: nutrition(tdee, a.weight, p.goal, comp.lean),
+    hr: { max: hrMax(age), rest, zones: zones(age, rest) },
+    next: next.toISOString().slice(0, 10),
+  };
+  if (prev) {
+    const pc = prev.results.comp, d = { days: Math.round((new Date(a.date) - new Date(prev.date)) / 864e5), weight: r1(a.weight - prev.weight) };
+    for (const k of ["bf", "fat", "lean"]) if (pc[k] != null && comp[k] != null) d[k] = r1(comp[k] - pc[k]);
+    const v = [];
+    if (d.lean > 0) v.push("ganho de massa magra"); if (d.fat < 0) v.push("redução de gordura");
+    if (d.fat > .5) v.push("aumento de gordura: revisar dieta"); if (d.lean < -.5) v.push("perda de massa magra: aumentar proteína/volume");
+    d.summary = v.join(", ") || "manutenção";
+    res.progress = d;
+  }
+  return res;
+}
+
+/* ------------------------------------------------------------------ Ficha (mesma lógica do backend) */
+const LEVEL = { beginner: 1, intermediate: 2, advanced: 3 };
+const PRESC = {
+  hypertrophy: { sets: 4, reps: "8-12", rest: 90, rir: "1-2" }, strength: { sets: 5, reps: "3-6", rest: 180, rir: "2-3" },
+  fat_loss: { sets: 3, reps: "10-15", rest: 60, rir: "1-3" }, health: { sets: 3, reps: "10-15", rest: 60, rir: "2-3" },
+  endurance: { sets: 3, reps: "15-20", rest: 45, rir: "2-3" },
+};
+const MAIN = new Set(["squat", "hinge", "push_h", "push_v", "pull_h", "pull_v", "lunge"]);
+function split(p) {
+  const d = p.days;
+  if (p.experience === "beginner" || d <= 3) return Array.from({ length: d }, (_, i) => ["Full body A", "Full body B"][i % 2]);
+  if (d === 4 || p.experience === "intermediate") { const x = ["Superiores A", "Inferiores A", "Superiores B", "Inferiores B"]; return [...x, ...x].slice(0, d); }
+  return ["Push (empurrar)", "Pull (puxar)", "Legs (pernas)", "Push (empurrar)", "Pull (puxar)", "Legs (pernas)"].slice(0, d);
+}
+const allowed = (id, lvl, rs) => EX[id].l <= lvl && !EX[id].r.some(x => rs.has(x));
+function pick(cands, lvl, rs, used) {
+  for (const id of cands) {
+    if (!used.has(id) && allowed(id, lvl, rs)) return id;
+    for (const alt of EX[id].a) if (!used.has(alt) && allowed(alt, lvl, rs)) return alt;
+  }
+  return null;
+}
+const strengthTime = items => items.reduce((s, it) => s + it.sets * (40 + it.rest), 0) / 60;
+function buildPlan(p, a) {
+  const R = a.results, rs = new Set(R.restrictions), lvl = LEVEL[p.experience], w = a.weight;
+  const base = { ...PRESC[p.goal] };
+  if (p.experience === "beginner") { base.sets = Math.max(2, base.sets - 1); if (["hypertrophy", "strength"].includes(p.goal)) base.reps = "10-12"; }
+  if (R.clearance) { base.rir = "3-4"; base.reps = "12-15"; }
+  const z = R.hr.zones;
+  let cmin = { fat_loss: 30, health: 25, endurance: 40, hypertrophy: 15, strength: 10 }[p.goal];
+  if (p.minutes <= 45) cmin = Math.min(cmin, 20);
+  const order = ["treadmill_incline_walk", "elliptical", "bike", "treadmill_walk"];
+  if (p.goal === "endurance" && p.experience !== "beginner") order.unshift("treadmill_run");
+  const cid = order.find(id => !EX[id].r.some(x => rs.has(x)));
+  const zone = p.goal === "endurance" ? z[2] : z[1];
+  const hiit = ["fat_loss", "endurance"].includes(p.goal) && p.experience !== "beginner" && !R.clearance && !rs.has("hypertension_uncontrolled");
+  const days = split(p).map(label => {
+    const used = new Set(); let items = [];
+    TPL[label].forEach((slot, i) => {
+      const id = pick(slot, lvl, rs, used); if (!id) return; used.add(id);
+      const e = EX[id], main = MAIN.has(e.p) && i < 3;
+      let pr = main ? base : { sets: 3, reps: "10-15", rest: 60, rir: base.rir };
+      if (e.t === "isometria") pr = { sets: 3, reps: "30-45 s", rest: 45, rir: "-" };
+      items.push({ id, sets: pr.sets, reps: pr.reps, rest: pr.rest, rir: pr.rir, tempo: e.t });
+    });
+    let cardioMin = cmin;
+    while (strengthTime(items) + cardioMin + 10 > p.minutes && items.length > 4) items.pop();
+    const st = strengthTime(items);
+    const fit = Math.max(10, Math.round(p.minutes - st - 10));
+    const shortened = fit < cardioMin; if (shortened) cardioMin = fit;
+    const metS = MET[["hypertrophy", "strength"].includes(p.goal) ? "strength_moderate" : "strength_light"];
+    const cardio = { id: cid, min: cardioMin, zone, kcal: kcalMET(MET[EX[cid].met], w, cardioMin), shortened, hiit: hiit ? { zone: z[3], kcal: kcalMET(MET.hiit, w, 21) } : null };
+    return { label, items, cardio, minutes: Math.round(st + cardioMin + 10), kcal: Math.round(kcalMET(metS, w, st) + cardio.kcal) };
+  });
+  return { base, days, weeklyCardio: days.reduce((s, d) => s + d.cardio.min, 0), nutrition: R.nutrition, alerts: R.alerts, validUntil: R.next };
+}
+
+/* ------------------------------------------------------------------ Estado e persistência */
+const today = () => new Date().toISOString().slice(0, 10);
+function exampleState() {
+  const profile = { name: "Exemplo", sex: "male", birth: "1990-05-10", height: 178, goal: "hypertrophy", experience: "intermediate", activity: "moderate", days: 4, minutes: 70, injuries: [] };
+  const d1 = new Date(); d1.setDate(d1.getDate() - 62); const d2 = new Date(); d2.setDate(d2.getDate() - 2);
+  const a1 = { date: d1.toISOString().slice(0, 10), weight: 85.4, sf: { chest: 13, abdominal: 26, thigh: 17 }, circ: { neck: 39, waist: 92, hip: 101, arm: 35.5 }, exams: { sys: 128, dia: 82, rhr: 66, glucose: 96 }, parq: {} };
+  a1.results = evaluate(profile, a1, null);
+  const a2 = { date: d2.toISOString().slice(0, 10), weight: 84.1, sf: { chest: 11, abdominal: 22, thigh: 15 }, circ: { neck: 39, waist: 89, hip: 100, arm: 36.5 }, exams: { sys: 122, dia: 79, rhr: 61, glucose: 91 }, parq: {} };
+  a2.results = evaluate(profile, a2, a1);
+  const workouts = [1, 3, 4, 6].map((ago, i) => { const s = new Date(); s.setDate(s.getDate() - ago); s.setHours(18, 30, 0, 0); return { start: s.toISOString(), min: 64 + i * 3, day: ["Superiores A", "Inferiores A", "Superiores B", "Inferiores B"][i], kcal: 410 + i * 22, source: "MET (Compendium 2024)", sets: 22, volume: 7800 + i * 900, avgHr: null }; });
+  return { example: true, profile, assessments: [a1, a2], workouts, chat: [] };
+}
+let S = exampleState();
+let db = null, uid = null, storage = "memória";
+const DOC = () => `data/users/${uid}/app/state`;
+
+async function initStore() {
+  try {
+    const c = window.claude;
+    if (c && c.use) {
+      const [d, u] = await Promise.all([c.use("db"), c.use("user")]);
+      if (d && u) { const id = await u.id(); if (id) { db = d; uid = id; } }
+    }
+  } catch (e) { db = null; }
+  if (db) {
+    try {
+      const snap = await db.doc(DOC()).get();
+      if (snap.exists && snap.data().state) { S = JSON.parse(snap.data().state); }
+      storage = "nuvem";
+    } catch (e) { db = null; }
+  }
+  if (!db) {
+    try { const raw = localStorage.getItem("gymtrainer"); if (raw) S = JSON.parse(raw); storage = "este navegador"; } catch (e) { storage = "memória"; }
+  }
+  setPill(); render();
+}
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const payload = JSON.stringify({ ...S, chat: S.chat.slice(-30), workouts: S.workouts.slice(-200) });
+    if (db) { try { await db.doc(DOC()).set({ state: payload, updated: new Date().toISOString() }); return; } catch (e) { toast("Não foi possível salvar na nuvem. Tente de novo."); } }
+    try { localStorage.setItem("gymtrainer", payload); } catch (e) { }
+  }, 400);
+}
+function setPill() {
+  const p = document.getElementById("syncPill");
+  p.textContent = S.example ? "Dados de exemplo" : storage === "nuvem" ? "Salvo na sua conta" : storage === "este navegador" ? "Salvo neste navegador" : "Não salvo";
+  p.className = "pill " + (S.example ? "warn" : storage === "memória" ? "bad" : "ok");
+}
+const latest = () => S.assessments[S.assessments.length - 1];
+const plan = () => latest() ? buildPlan(S.profile, latest()) : null;
+
+/* ------------------------------------------------------------------ Utilidades de interface */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtDate = s => new Date(s.length === 10 ? s + "T12:00:00" : s).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+const GOALS = { hypertrophy: "Hipertrofia", fat_loss: "Emagrecimento", strength: "Força", health: "Saúde", endurance: "Resistência" };
+const EXP = { beginner: "Iniciante", intermediate: "Intermediário", advanced: "Avançado" };
+function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2600); }
+const videoURL = id => "https://www.youtube.com/results?search_query=" + encodeURIComponent(EX[id].n + " execução correta");
+
+const ICONS = {
+  hoje: '<path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  ficha: '<rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  treino: '<path d="M3 10v4M6 8v8M18 8v8M21 10v4M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>',
+  avaliacao: '<circle cx="12" cy="5" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 9h14M12 9v6m0 0-3 6m3-6 3 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>',
+  coach: '<path d="M4 5h16v10H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 10h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+};
+const TABS = [["hoje", "Hoje"], ["ficha", "Ficha"], ["treino", "Treino"], ["avaliacao", "Avaliação"], ["coach", "Coach"]];
+let tab = TABS.some(t => t[0] === location.hash.slice(1)) ? location.hash.slice(1) : "hoje";
+let dayIdx = 0;
+
+function renderTabs() {
+  document.getElementById("tabs").innerHTML = TABS.map(([k, l]) => `<button type="button" data-tab="${k}" ${k === tab ? 'aria-current="page"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>${l}</button>`).join("");
+}
+document.getElementById("tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; tab = b.dataset.tab; try { history.replaceState(null, "", "#" + tab); } catch (_) { } render(); window.scrollTo(0, 0); });
+
+function render() {
+  renderTabs(); setPill();
+  const v = document.getElementById("view");
+  v.innerHTML = ({ hoje: viewToday, ficha: viewPlan, treino: viewWorkout, avaliacao: viewAssessment, coach: viewCoach }[tab])();
+  if (tab === "coach") bindCoach();
+  if (tab === "treino") bindWorkout();
+}
+
+/* ------------------------------------------------------------------ Hoje */
+function viewToday() {
+  const a = latest(), P = plan(), p = S.profile;
+  const now = Date.now(), week = S.workouts.filter(w => now - new Date(w.start) < 7 * 864e5);
+  const daysLeft = a ? Math.round((new Date(a.results.next + "T12:00:00") - now) / 864e5) : 0;
+  const nextDay = P ? P.days[S.workouts.length % P.days.length] : null;
+  let h = "";
+  if (S.example) h += `<div class="banner"><b>Você está vendo um aluno de exemplo.</b><p class="small">Crie seu perfil e faça sua avaliação para o Coach montar a sua ficha.</p><button class="primary" type="button" onclick="openProfile()">Criar meu perfil</button></div>`;
+  h += `<section class="block"><div class="row between"><div><p class="label">${GOALS[p.goal]} · ${EXP[p.experience]} · ${p.days}x/semana</p><h1>Olá, ${esc(p.name)}</h1></div><button type="button" class="ghost small" onclick="openProfile()">Editar perfil</button></div></section>`;
+  if (a) h += `<div class="card"><div class="row between"><span class="label">Avaliação bimestral</span>${daysLeft <= 0 ? '<span class="pill bad">Vencida</span>' : `<span class="pill ${daysLeft <= 7 ? "warn" : "ok"}">em ${daysLeft} dias</span>`}</div><p class="small">Próxima avaliação: <b>${fmtDate(a.results.next)}</b> · a ficha é refeita a cada avaliação.</p></div>`;
+  else h += `<div class="card"><h3>Faça sua primeira avaliação</h3><p class="small muted">Sem avaliação o Coach não consegue montar sua ficha.</p><button class="primary" type="button" onclick="go('avaliacao')">Fazer avaliação</button></div>`;
+  if (nextDay) h += `<div class="card"><span class="label">Próximo treino</span><h2>${esc(nextDay.label)}</h2><p class="small muted num">${nextDay.items.length} exercícios · ${nextDay.cardio.min} min de cardio · ~${nextDay.minutes} min · ~${nextDay.kcal} kcal</p><button class="primary" type="button" onclick="startWorkout(${P.days.indexOf(nextDay)})">Começar treino</button></div>`;
+  h += `<section class="block"><h2>Últimos 7 dias</h2><div class="grid2">
+    <div class="stat"><b>${week.length}<span class="small muted">/${p.days}</span></b><span class="tiny">treinos</span></div>
+    <div class="stat"><b>${Math.round(week.reduce((s, w) => s + w.kcal, 0))}</b><span class="tiny">kcal em treino</span></div>
+    <div class="stat"><b>${Math.round(week.reduce((s, w) => s + w.min, 0))}</b><span class="tiny">minutos</span></div>
+    <div class="stat"><b>${(week.reduce((s, w) => s + (w.volume || 0), 0) / 1000).toFixed(1)}t</b><span class="tiny">volume (carga × reps)</span></div></div></section>`;
+  if (P) {
+    const n = P.nutrition;
+    h += `<section class="block"><h2>Metas do dia</h2><div class="card"><div class="list">
+      <div class="li"><span>Calorias</span><span>${n.kcal} kcal</span></div><div class="li"><span>Proteína</span><span>${n.protein} g</span></div>
+      <div class="li"><span>Carboidratos</span><span>${n.carbs} g</span></div><div class="li"><span>Gorduras</span><span>${n.fat} g</span></div>
+      <div class="li"><span>Fibras</span><span>${n.fiber} g</span></div><div class="li"><span>Água</span><span>${(n.water / 1000).toFixed(1)} L</span></div></div>
+      <p class="tiny muted">Gasto diário estimado ${a.results.energy.tdee} kcal (TMB ${a.results.energy.bmr} kcal, ${a.results.energy.bmrMethod}).</p></div></section>`;
+    if (P.alerts.length) h += `<section class="block"><h2>Atenção</h2>${P.alerts.map(x => `<div class="alert ${x.lvl}">${esc(x.t)}</div>`).join("")}</section>`;
+  }
+  if (S.workouts.length) h += `<section class="block"><h2>Histórico</h2><div class="card"><div class="list">${S.workouts.slice(-6).reverse().map(w => `<div class="li"><span><b>${esc(w.day || "Treino livre")}</b><br><span class="tiny muted">${fmtDate(w.start)} · ${Math.round(w.min)} min · ${esc(w.source)}</span></span><span>${Math.round(w.kcal)} kcal</span></div>`).join("")}</div></div></section>`;
+  h += `<p class="tiny muted">Esta versão web não acessa o app Saúde nem o Apple Watch: a Apple só libera esses dados para apps nativos. No app de iPhone, FC e calorias chegam sozinhas do relógio.</p>`;
+  return h;
+}
+function go(t) { tab = t; try { history.replaceState(null, "", "#" + t); } catch (_) { } render(); window.scrollTo(0, 0); }
+
+/* ------------------------------------------------------------------ Ficha */
+function viewPlan() {
+  const P = plan();
+  if (!P) return `<div class="card"><h3>Sem ficha ainda</h3><p class="small muted">Faça a avaliação física para o Coach montar sua ficha.</p><button class="primary" type="button" onclick="go('avaliacao')">Fazer avaliação</button></div>`;
+  if (dayIdx >= P.days.length) dayIdx = 0;
+  const d = P.days[dayIdx], c = d.cardio, ce = EX[c.id];
+  let h = `<section class="block"><p class="label">Válida até ${fmtDate(P.validUntil)} · ${GOALS[S.profile.goal]}</p><h1>Ficha de treino</h1>
+    <div class="daytabs" role="group" aria-label="Dias">${P.days.map((x, i) => `<button type="button" aria-pressed="${i === dayIdx}" onclick="dayIdx=${i};render()">${String.fromCharCode(65 + i)} · ${esc(x.label)}</button>`).join("")}</div></section>`;
+  h += `<div class="grid3"><div class="stat"><b>${d.items.length}</b><span class="tiny">exercícios</span></div><div class="stat"><b>~${d.minutes}</b><span class="tiny">minutos</span></div><div class="stat"><b>~${d.kcal}</b><span class="tiny">kcal</span></div></div>`;
+  h += `<div class="card"><span class="label">Aquecimento</span><p class="small">5 min de cardio leve (Z1) + mobilidade + 1-2 séries leves (50-70% da carga) no 1º exercício.</p></div>`;
+  h += `<section class="block"><h2>Musculação</h2><div class="card" style="padding-block:4px">${d.items.map((it, i) => `<button type="button" class="exitem" onclick="openExercise('${it.id}',${dayIdx},${i})"><span class="exnum">${i + 1}</span><span class="stack" style="gap:2px"><span class="exname">${esc(EX[it.id].n)}</span><span class="tiny muted num">${it.sets} × ${esc(it.reps)} · descanso ${it.rest}s · RIR ${esc(it.rir)} · cadência ${esc(it.tempo)}</span></span><span class="chev" aria-hidden="true">›</span></button>`).join("")}</div></section>`;
+  h += `<section class="block"><h2>Cardio</h2><div class="card">
+    <button type="button" class="exitem" style="border:0;padding:0" onclick="openExercise('${c.id}',${dayIdx},-1)"><span class="exnum">♥</span><span class="stack" style="gap:2px"><span class="exname">${esc(ce.n)}</span><span class="tiny muted num">${c.min} min contínuo + 5 min de aquecimento · ~${Math.round(c.kcal)} kcal</span></span><span class="chev" aria-hidden="true">›</span></button>
+    <div class="row between"><span class="pill"><span class="zdot ${c.zone.k}"></span>${c.zone.name}</span><b class="num">${c.zone.lo}-${c.zone.hi} bpm</b></div>
+    <p class="tiny muted">Faça depois da musculação para preservar a força nos exercícios principais.${c.shortened ? " Cardio encurtado para caber no seu tempo: complete o restante em dias alternados." : ""}</p>
+    ${c.hiit ? `<div class="alert"><span><b>Opção HIIT (1-2x/semana):</b> 8 × (30 s forte + 90 s leve) na bike ou elíptico, tiros em ${c.hiit.zone.lo}-${c.hiit.zone.hi} bpm. ~21 min, ~${Math.round(c.hiit.kcal)} kcal.</span></div>` : ""}</div></section>`;
+  h += `<div class="card"><span class="label">Volta à calma</span><p class="small">5 min de caminhada leve + alongamento estático dos músculos trabalhados (20-30 s cada).</p></div>`;
+  h += `<button class="primary full" type="button" onclick="startWorkout(${dayIdx})">Começar este treino</button>`;
+  h += `<section class="block"><h2>Periodização · 8 semanas</h2><div class="card"><div class="list">
+    <div class="li"><span>Semanas 1-3</span><span class="small" style="font-weight:400">Acumulação: suba as reps até o topo da faixa, depois a carga</span></div>
+    <div class="li"><span>Semana 4</span><span class="small" style="font-weight:400">Deload: mesma carga, metade das séries</span></div>
+    <div class="li"><span>Semanas 5-7</span><span class="small" style="font-weight:400">Intensificação: RIR 0-2 nas últimas séries</span></div>
+    <div class="li"><span>Semana 8</span><span class="small" style="font-weight:400">Deload + reavaliação e nova ficha</span></div></div>
+    <p class="tiny muted">Progressão: ao completar todas as séries com ${P.base.reps.split("-").pop()} reps e boa técnica, aumente 2-5% (superiores) ou 5-10% (inferiores). Cardio na ficha: ${P.weeklyCardio} min/semana; a meta da OMS é 150-300 min de atividade moderada.</p></div></section>`;
+  return h;
+}
+
+/* ------------------------------------------------------------------ Demonstração do exercício */
+let demoTimer = null, tempoTimer = null;
+function openExercise(id, di, ii) {
+  const e = EX[id], P = plan(), d = P && P.days[di], it = d && ii >= 0 ? d.items[ii] : null, c = d && ii < 0 ? d.cardio : null;
+  const tp = e.t.split("-").map(Number), tempoOK = tp.length === 4 && tp.every(n => !isNaN(n));
+  const sh = document.getElementById("sheet");
+  sh.innerHTML = `<div class="app">
+    <div class="row between"><button type="button" onclick="closeSheet()">‹ Voltar</button><a class="btn" href="${videoURL(id)}" target="_blank" rel="noopener">Ver vídeo ↗</a></div>
+    <section class="block"><p class="label">${esc(e.q)} · nível ${["", "iniciante", "intermediário", "avançado"][e.l]}</p><h1>${esc(e.n)}</h1><p class="small" style="color:var(--accent);font-weight:700">${e.m.map(esc).join(" · ")}</p></section>
+    ${it ? `<div class="grid3"><div class="stat"><b>${it.sets}×${esc(it.reps)}</b><span class="tiny">séries × reps</span></div><div class="stat"><b>${it.rest}s</b><span class="tiny">descanso</span></div><div class="stat"><b>${esc(it.rir)}</b><span class="tiny">RIR (reps na reserva)</span></div></div>` : ""}
+    ${c ? `<div class="grid3"><div class="stat"><b>${c.min}</b><span class="tiny">minutos</span></div><div class="stat"><b>${c.zone.lo}-${c.zone.hi}</b><span class="tiny">bpm alvo</span></div><div class="stat"><b>~${Math.round(c.kcal)}</b><span class="tiny">kcal</span></div></div>` : ""}
+    <div class="card"><div class="row between"><h3>Execução passo a passo</h3><button type="button" id="playBtn" onclick="toggleDemo(${e.s.length})">▶ Reproduzir</button></div>
+      <div class="progress"><i id="demoBar"></i></div>
+      <div class="steps">${e.s.map((s, i) => `<button type="button" class="step" data-step="${i}" ${i === 0 ? 'aria-current="step"' : ""} onclick="setStep(${i})"><b>${i + 1}</b><span>${esc(s)}</span></button>`).join("")}</div></div>
+    ${tempoOK ? `<div class="card"><div class="row between"><h3>Cadência ${esc(e.t)}</h3><button type="button" id="tempoBtn" onclick="toggleTempo([${tp}])">Metrônomo</button></div>
+      <div class="tempo" id="tempo">${["Descida", "Pausa", "Subida", "Topo"].map((l, i) => `<div data-ph="${i}"><b>${tp[i]}s</b><span class="tiny">${l}</span></div>`).join("")}</div>
+      <p class="tiny muted">Segundos em cada fase: descida, pausa embaixo, subida, pausa em cima.</p></div>` : ""}
+    <div class="card"><h3>Respiração</h3><p class="small">${esc(e.b)}</p></div>
+    <div class="card"><h3 style="color:var(--ok)">Pontos-chave</h3><ul class="cues small">${e.c.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+    <div class="card"><h3 style="color:var(--bad)">Erros comuns</h3><ul class="cues small">${e.x.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+    ${e.a.length ? `<div class="card"><h3>Substitutos</h3><p class="small">${e.a.map(x => esc(EX[x].n)).join(" · ")}</p></div>` : ""}
+  </div>`;
+  sh.hidden = false; sh.scrollTop = 0; document.body.style.overflow = "hidden";
+}
+function closeSheet() { clearInterval(demoTimer); clearTimeout(tempoTimer); demoTimer = null; tempoTimer = null; const sh = document.getElementById("sheet"); sh.hidden = true; sh.innerHTML = ""; document.body.style.overflow = ""; }
+let curStep = 0;
+function setStep(i) {
+  curStep = i;
+  const steps = document.querySelectorAll(".step");
+  steps.forEach(b => +b.dataset.step === i ? b.setAttribute("aria-current", "step") : b.removeAttribute("aria-current"));
+  const bar = document.getElementById("demoBar"); if (bar) bar.style.width = ((i + 1) / steps.length * 100) + "%";
+}
+function toggleDemo(n) {
+  const b = document.getElementById("playBtn");
+  if (demoTimer) { clearInterval(demoTimer); demoTimer = null; b.textContent = "▶ Reproduzir"; return; }
+  b.textContent = "❚❚ Pausar"; setStep(curStep = 0);
+  demoTimer = setInterval(() => setStep(curStep = (curStep + 1) % n), 3500);
+}
+function toggleTempo(tp) {
+  const b = document.getElementById("tempoBtn");
+  if (tempoTimer) { clearTimeout(tempoTimer); tempoTimer = null; b.textContent = "Metrônomo"; document.querySelectorAll("#tempo div").forEach(d => d.classList.remove("on")); return; }
+  b.textContent = "Parar"; let ph = 0;
+  const tick = () => {
+    document.querySelectorAll("#tempo div").forEach(d => d.classList.toggle("on", +d.dataset.ph === ph));
+    const dur = Math.max(tp[ph], 0.25); ph = (ph + 1) % 4;
+    tempoTimer = setTimeout(tick, dur * 1000);
+  };
+  tick();
+}
+
+/* ------------------------------------------------------------------ Treino ao vivo */
+let W = null, tickTimer = null;
+function startWorkout(di) {
+  const P = plan(); if (!P) { go("avaliacao"); return; }
+  const d = P.days[di];
+  W = { di, label: d.label, start: Date.now(), idx: 0, set: 1, logs: [], restUntil: 0, phase: d.items.length ? "strength" : "cardio", cardioStart: null, reps: 10, kg: 20, hr: "" };
+  go("treino");
+}
+function viewWorkout() {
+  const P = plan();
+  if (!W) {
+    if (!P) return `<div class="card"><h3>Sem ficha ainda</h3><p class="small muted">Faça a avaliação para liberar os treinos.</p><button class="primary" type="button" onclick="go('avaliacao')">Fazer avaliação</button></div>`;
+    return `<section class="block"><h1>Treino</h1><p class="small muted">Escolha o dia da ficha. O app guia as séries, conta o descanso e calcula as calorias no final.</p></section>
+      <div class="stack">${P.days.map((d, i) => `<button type="button" class="card" style="text-align:left;font-weight:400" onclick="startWorkout(${i})"><span class="row between"><span class="exname">${String.fromCharCode(65 + i)} · ${esc(d.label)}</span><span class="chev">›</span></span><span class="tiny muted num">${d.items.length} exercícios · ${d.cardio.min} min de cardio · ~${d.minutes} min</span></button>`).join("")}</div>
+      <p class="tiny muted">No Apple Watch, o app nativo mede FC e calorias ao vivo. Aqui você pode digitar a FC média que o relógio mostrar.</p>`;
+  }
+  const d = P.days[W.di], it = d.items[W.idx];
+  let h = `<div class="row between"><div><p class="label">Treino em andamento</p><h1>${esc(W.label)}</h1></div><span class="big num" id="elapsed" style="font-size:34px">00:00</span></div>`;
+  if (W.phase === "strength" && it) {
+    const e = EX[it.id];
+    h += `<div class="card"><div class="row between"><span class="label">Exercício ${W.idx + 1} de ${d.items.length}</span><span class="pill">Série ${W.set}/${it.sets}</span></div>
+      <h2 style="text-transform:none">${esc(e.n)}</h2><p class="small muted num">Meta: ${esc(it.reps)} reps · RIR ${esc(it.rir)} · cadência ${esc(it.tempo)}</p>
+      <div class="timer-ring" id="restBox" hidden><span class="label">Descanso</span><span class="big num" id="rest">0</span><button type="button" class="ghost small" onclick="W.restUntil=0;updateTick()">Pular descanso</button></div>
+      <div class="grid2"><div class="field"><label>Repetições</label><div class="stepper"><button type="button" onclick="W.reps=Math.max(1,W.reps-1);render()">−</button><b>${W.reps}</b><button type="button" onclick="W.reps++;render()">+</button></div></div>
+      <div class="field"><label>Carga (kg)</label><div class="stepper"><button type="button" onclick="W.kg=Math.max(0,W.kg-2.5);render()">−</button><b>${W.kg}</b><button type="button" onclick="W.kg+=2.5;render()">+</button></div></div></div>
+      <button type="button" class="primary full" onclick="logSet()">Concluir série</button>
+      <div class="row between"><button type="button" class="ghost small" onclick="openExercise('${it.id}',${W.di},${W.idx})">Como executar</button><button type="button" class="ghost small" onclick="nextEx()">Pular exercício ›</button></div></div>`;
+  } else {
+    const c = d.cardio;
+    h += `<div class="card"><span class="label">Cardio</span><h2 style="text-transform:none">${esc(EX[c.id].n)}</h2>
+      <p class="small">${c.min} min em <b>${c.zone.name}</b>: <b class="num">${c.zone.lo}-${c.zone.hi} bpm</b></p>
+      <div class="timer-ring"><span class="label">Cardio</span><span class="big num" id="cardioClock">${W.cardioStart ? "" : c.min + ":00"}</span></div>
+      ${W.cardioStart ? "" : `<button type="button" class="primary full" onclick="W.cardioStart=Date.now();render()">Iniciar cardio</button>`}
+      <button type="button" class="ghost small" onclick="openExercise('${c.id}',${W.di},-1)">Como executar</button></div>`;
+  }
+  h += `<div class="card"><div class="field"><label for="hrIn">FC média do treino (opcional, do relógio ou da cinta)</label><input id="hrIn" type="number" inputmode="numeric" min="50" max="220" placeholder="ex.: 128" value="${esc(W.hr)}" oninput="W.hr=this.value"></div>
+    <p class="tiny muted">Com FC, as calorias usam a equação de Keytel (2005). Sem FC, usam o MET da atividade (Compendium 2024).</p></div>`;
+  if (W.logs.length) h += `<div class="card"><span class="label">Séries registradas (${W.logs.length})</span><div class="list">${W.logs.slice(-5).reverse().map(l => `<div class="li"><span>${esc(EX[l.id].n)} · série ${l.set}</span><span>${l.reps} × ${l.kg} kg</span></div>`).join("")}</div></div>`;
+  h += `<div class="row"><button type="button" class="primary" style="flex:1" onclick="finishWorkout()">Finalizar treino</button><button type="button" onclick="W=null;render()">Descartar</button></div>`;
+  return h;
+}
+function bindWorkout() { clearInterval(tickTimer); if (W) { updateTick(); tickTimer = setInterval(updateTick, 1000); } }
+function mmss(s) { s = Math.max(0, Math.round(s)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
+function updateTick() {
+  if (!W || tab !== "treino") { clearInterval(tickTimer); return; }
+  const el = document.getElementById("elapsed"); if (el) el.textContent = mmss((Date.now() - W.start) / 1000);
+  const rb = document.getElementById("restBox"), r = document.getElementById("rest");
+  if (rb && r) { const left = (W.restUntil - Date.now()) / 1000; rb.hidden = left <= 0; r.textContent = mmss(left); }
+  const cc = document.getElementById("cardioClock");
+  if (cc && W.cardioStart) { const c = plan().days[W.di].cardio; const left = c.min * 60 - (Date.now() - W.cardioStart) / 1000; cc.textContent = left > 0 ? mmss(left) : "Concluído"; }
+}
+function logSet() {
+  const it = plan().days[W.di].items[W.idx];
+  W.logs.push({ id: it.id, set: W.set, reps: W.reps, kg: W.kg });
+  if (W.set < it.sets) { W.set++; W.restUntil = Date.now() + it.rest * 1000; render(); toast(`Série salva. Descanse ${it.rest}s.`); }
+  else nextEx();
+}
+function nextEx() {
+  const d = plan().days[W.di]; W.set = 1; W.restUntil = 0; W.idx++;
+  if (W.idx >= d.items.length) { W.phase = "cardio"; toast("Musculação concluída. Agora o cardio."); }
+  render();
+}
+function finishWorkout() {
+  const p = S.profile, w = latest().weight, min = (Date.now() - W.start) / 60000, hr = parseFloat(W.hr);
+  const onlyCardio = W.logs.length === 0 && W.cardioStart;
+  const met = onlyCardio ? MET[EX[plan().days[W.di].cardio.id].met] : MET.strength_moderate;
+  const kcal = hr > 40 ? kcalHR(hr, w, ageOf(p.birth), p.sex, min) : kcalMET(met, w, min);
+  const rec = { start: new Date(W.start).toISOString(), min: r1(min), day: W.label, kcal: Math.round(kcal), source: hr > 40 ? "FC (Keytel 2005)" : "MET (Compendium 2024)", sets: W.logs.length, volume: W.logs.reduce((s, l) => s + l.reps * l.kg, 0), avgHr: hr > 40 ? hr : null };
+  S.workouts.push(rec); W = null; save();
+  toast(`Treino salvo: ${rec.kcal} kcal em ${Math.round(rec.min)} min.`); go("hoje");
+}
+
+/* ------------------------------------------------------------------ Avaliação */
+let lastResult = null;
+function numField(id, label, val, hint) { return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="number" inputmode="decimal" step="any" value="${val ?? ""}" ${hint ? `placeholder="${hint}"` : ""}></div>`; }
+function viewAssessment() {
+  const a = latest(), sex = S.profile.sex;
+  const three = sex === "male" ? [["chest", "Peitoral"], ["abdominal", "Abdominal"], ["thigh", "Coxa"]] : [["triceps", "Tríceps"], ["suprailiac", "Supra-ilíaca"], ["thigh", "Coxa"]];
+  const rest = [["chest", "Peitoral"], ["midaxillary", "Axilar média"], ["triceps", "Tríceps"], ["subscapular", "Subescapular"], ["abdominal", "Abdominal"], ["suprailiac", "Supra-ilíaca"]].filter(([k]) => !three.some(t => t[0] === k));
+  const parq = [["heart", "Algum médico já disse que você tem problema cardíaco?"], ["chestAct", "Sente dor no peito ao praticar atividade física?"], ["chestRest", "Sentiu dor no peito no último mês, em repouso?"], ["dizzy", "Perde o equilíbrio por tontura ou já desmaiou?"], ["joint", "Tem problema ósseo ou articular que piora com exercício?"], ["meds", "Toma remédio para pressão ou coração?"], ["other", "Sabe de outra razão para não fazer atividade física?"]];
+  let h = `<section class="block"><p class="label">A cada 60 dias</p><h1>Avaliação física</h1><p class="small muted">Com os resultados e exames, o Coach recalcula suas metas e monta uma nova ficha.</p></section>`;
+  if (lastResult) h += resultCard(lastResult, true);
+  h += `<form id="assessForm" class="stack" style="gap:16px">
+    <div class="card"><h3>Peso</h3>${numField("w", "Peso (kg)", a?.weight, "ex.: 82,5")}</div>
+    <div class="card"><h3>Dobras cutâneas (mm)</h3><p class="tiny muted">Lado direito, média de 2-3 medidas com adipômetro. Com as 3 dobras abaixo usamos Jackson & Pollock 3; com as 7, o protocolo de 7.</p>
+      <div class="grid3">${three.map(([k, l]) => numField("sf_" + k, l, "")).join("")}</div>
+      <details><summary class="small">Mais 4 dobras (protocolo de 7)</summary><div class="grid2" style="margin-top:10px">${rest.map(([k, l]) => numField("sf_" + k, l, "")).join("")}</div></details></div>
+    <div class="card"><h3>Circunferências (cm)</h3><p class="tiny muted">Sem adipômetro? Pescoço, cintura${sex === "female" ? " e quadril" : ""} bastam para estimar a gordura pelo método da Marinha dos EUA.</p>
+      <div class="grid2">${numField("c_neck", "Pescoço", "")}${numField("c_waist", "Cintura", "")}${numField("c_hip", "Quadril", "")}${numField("c_arm", "Braço contraído", "")}${numField("c_thigh", "Coxa", "")}${numField("c_calf", "Panturrilha", "")}</div></div>
+    <div class="card"><h3>Exames</h3><div class="grid2">${numField("e_sys", "PA sistólica (mmHg)", "", "120")}${numField("e_dia", "PA diastólica (mmHg)", "", "80")}${numField("e_rhr", "FC de repouso (bpm)", "", "Apple Watch")}${numField("e_glucose", "Glicemia jejum (mg/dL)", "")}${numField("e_hba1c", "HbA1c (%)", "")}${numField("e_ldl", "LDL (mg/dL)", "")}${numField("e_hdl", "HDL (mg/dL)", "")}${numField("e_tg", "Triglicerídeos (mg/dL)", "")}${numField("e_vitd", "Vitamina D (ng/mL)", "")}</div></div>
+    <div class="card"><h3>PAR-Q</h3><p class="tiny muted">Triagem de saúde antes do exercício.</p>${parq.map(([k, q]) => `<label class="check"><input type="checkbox" id="pq_${k}"><span>${q}</span></label>`).join("")}</div>
+    <button type="submit" class="primary full">Avaliar e gerar nova ficha</button></form>`;
+  if (S.assessments.length) h += `<section class="block"><h2>Histórico</h2>${S.assessments.slice().reverse().map(x => resultCard(x, false)).join("")}</section>`;
+  setTimeout(() => { const f = document.getElementById("assessForm"); if (f) f.addEventListener("submit", submitAssessment); });
+  return h;
+}
+function resultCard(a, fresh) {
+  const R = a.results, c = R.comp;
+  return `<div class="card" ${fresh ? 'style="border-color:var(--accent)"' : ""}><div class="row between"><h3>${fresh ? "Resultado de hoje" : fmtDate(a.date)}</h3>${R.clearance ? '<span class="pill bad">Liberação médica</span>' : '<span class="pill ok">Apto</span>'}</div>
+    <div class="grid3"><div class="stat"><b>${a.weight}</b><span class="tiny">kg</span></div><div class="stat"><b>${c.bf ?? "—"}${c.bf != null ? "%" : ""}</b><span class="tiny">gordura</span></div><div class="stat"><b>${c.lean ?? "—"}</b><span class="tiny">kg massa magra</span></div></div>
+    <div class="list small"><div class="li"><span>IMC</span><span>${c.bmi} · ${c.bmiCat}</span></div>
+      ${c.bfCat ? `<div class="li"><span>Classificação</span><span>${c.bfCat}</span></div>` : ""}
+      ${c.waistRisk ? `<div class="li"><span>Cintura</span><span>${c.waistRisk}</span></div>` : ""}
+      ${c.whr ? `<div class="li"><span>Cintura/quadril</span><span>${c.whr} · ${c.whrRisk}</span></div>` : ""}
+      ${R.progress ? `<div class="li"><span>Evolução (${R.progress.days} dias)</span><span>${R.progress.weight > 0 ? "+" : ""}${R.progress.weight} kg${R.progress.fat != null ? ` · gordura ${R.progress.fat > 0 ? "+" : ""}${R.progress.fat} kg` : ""}${R.progress.lean != null ? ` · magra ${R.progress.lean > 0 ? "+" : ""}${R.progress.lean} kg` : ""}</span></div>
+      <div class="li"><span>Resumo</span><span>${esc(R.progress.summary)}</span></div>` : ""}</div>
+    ${c.method ? `<p class="tiny muted">Método: ${c.method}</p>` : ""}
+    ${fresh ? `<div><p class="label" style="margin-bottom:6px">Suas zonas de FC (Karvonen)</p><div class="zone">${R.hr.zones.map(z => `<i class="${z.k}"></i>`).join("")}</div>${R.hr.zones.map(z => `<div class="zrow"><span class="zdot ${z.k}"></span><span class="small">${z.name} <span class="muted">${z.pct}</span></span><b class="num small">${z.lo}-${z.hi}</b></div>`).join("")}</div>
+      ${R.alerts.map(x => `<div class="alert ${x.lvl}">${esc(x.t)}</div>`).join("")}
+      <button type="button" class="primary" onclick="lastResult=null;go('ficha')">Ver minha nova ficha</button>` : ""}</div>`;
+}
+function submitAssessment(ev) {
+  ev.preventDefault();
+  const v = id => { const el = document.getElementById(id); if (!el || el.value === "") return undefined; const n = parseFloat(String(el.value).replace(",", ".")); return isNaN(n) ? undefined : n; };
+  const w = v("w"); if (!w || w < 30 || w > 350) { toast("Informe um peso entre 30 e 350 kg."); return; }
+  const sf = {}; ["chest", "midaxillary", "triceps", "subscapular", "abdominal", "suprailiac", "thigh"].forEach(k => { const x = v("sf_" + k); if (x != null) sf[k] = x; });
+  const circ = {}; ["neck", "waist", "hip", "arm", "thigh", "calf"].forEach(k => { const x = v("c_" + k); if (x != null) circ[k] = x; });
+  const exams = {}; ["sys", "dia", "rhr", "glucose", "hba1c", "ldl", "hdl", "tg", "vitd"].forEach(k => { const x = v("e_" + k); if (x != null) exams[k] = x; });
+  const parq = {}; document.querySelectorAll('[id^="pq_"]').forEach(el => parq[el.id.slice(3)] = el.checked);
+  if (S.example) { S = { example: false, profile: S.profile, assessments: [], workouts: [], chat: [] }; }
+  const a = { date: today(), weight: w, sf, circ, exams, parq };
+  a.results = evaluate(S.profile, a, latest() || null);
+  S.assessments.push(a); lastResult = a; save(); render(); window.scrollTo(0, 0);
+  toast("Avaliação salva e ficha atualizada.");
+}
+
+/* ------------------------------------------------------------------ Perfil */
+function openProfile() {
+  const p = S.example ? { ...S.profile, name: "" } : S.profile;
+  const opt = (o, sel) => Object.entries(o).map(([k, l]) => `<option value="${k}" ${k === sel ? "selected" : ""}>${l}</option>`).join("");
+  const sh = document.getElementById("sheet");
+  sh.innerHTML = `<div class="app"><div class="row between"><button type="button" onclick="closeSheet()">‹ Voltar</button></div>
+    <section class="block"><h1>${S.example ? "Criar meu perfil" : "Meu perfil"}</h1><p class="small muted">O Coach usa estes dados para calcular metas e escolher os exercícios.</p></section>
+    <form id="profForm" class="stack" style="gap:16px"><div class="card">
+      <div class="field"><label for="p_name">Nome</label><input id="p_name" required value="${esc(p.name)}"></div>
+      <div class="grid2"><div class="field"><label for="p_sex">Sexo biológico</label><select id="p_sex">${opt({ male: "Masculino", female: "Feminino" }, p.sex)}</select></div>
+      <div class="field"><label for="p_birth">Nascimento</label><input id="p_birth" type="date" required value="${p.birth}"></div></div>
+      <div class="field"><label for="p_h">Altura (cm)</label><input id="p_h" type="number" min="120" max="230" required value="${p.height}"></div></div>
+    <div class="card"><div class="field"><label for="p_goal">Objetivo</label><select id="p_goal">${opt(GOALS, p.goal)}</select></div>
+      <div class="field"><label for="p_exp">Experiência</label><select id="p_exp">${opt({ beginner: "Iniciante (menos de 6 meses)", intermediate: "Intermediário (6 meses a 2 anos)", advanced: "Avançado (mais de 2 anos)" }, p.experience)}</select></div>
+      <div class="field"><label for="p_act">Atividade fora da academia</label><select id="p_act">${opt({ sedentary: "Sedentário", light: "Leve", moderate: "Moderada", very_active: "Muito ativo" }, p.activity)}</select></div>
+      <div class="grid2"><div class="field"><label for="p_days">Dias por semana</label><select id="p_days">${[2, 3, 4, 5, 6].map(n => `<option ${n === p.days ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+      <div class="field"><label for="p_min">Minutos por treino</label><select id="p_min">${[45, 60, 75, 90].map(n => `<option ${n === p.minutes ? "selected" : ""}>${n}</option>`).join("")}</select></div></div></div>
+    <div class="card"><h3>Lesões ou dores</h3>${[["knee", "Joelho"], ["lower_back", "Lombar"], ["shoulder", "Ombro"]].map(([k, l]) => `<label class="check"><input type="checkbox" id="inj_${k}" ${(p.injuries || []).includes(k) ? "checked" : ""}><span>${l}</span></label>`).join("")}
+      <p class="tiny muted">Exercícios que sobrecarregam a região marcada saem da ficha e entram substitutos.</p></div>
+    <button type="submit" class="primary full">Salvar perfil</button></form></div>`;
+  sh.hidden = false; sh.scrollTop = 0; document.body.style.overflow = "hidden";
+  document.getElementById("profForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const g = id => document.getElementById(id).value;
+    const prof = { name: g("p_name").trim(), sex: g("p_sex"), birth: g("p_birth"), height: +g("p_h"), goal: g("p_goal"), experience: g("p_exp"), activity: g("p_act"), days: +g("p_days"), minutes: +g("p_min"), injuries: ["knee", "lower_back", "shoulder"].filter(k => document.getElementById("inj_" + k).checked) };
+    if (S.example) S = { example: false, profile: prof, assessments: [], workouts: [], chat: [] };
+    else { S.profile = prof; S.assessments.forEach((a, i) => a.results = evaluate(prof, a, S.assessments[i - 1] || null)); }
+    save(); closeSheet(); toast("Perfil salvo."); go(S.assessments.length ? "hoje" : "avaliacao");
+  });
+}
+
+/* ------------------------------------------------------------------ Coach (IA) */
+const COACH_PROMPT = `Você é o "Coach", personal trainer com mais de 20 anos de experiência em academia, formado em Educação Física (CREF) e em Nutrição (CRN), especialista em fisiologia do exercício, hipertrofia, emagrecimento e lesões comuns de joelho, ombro e coluna.
+Baseie-se em evidências (ACSM, ISSN, OMS, Diretrizes SBC, Schoenfeld, Helms). Use os dados reais do aluno abaixo e nunca invente números. Explique execução passo a passo quando pedirem, sugira substitutos para dor ou falta de equipamento, ajuste carga/volume/cardio pela evolução (RIR, progressão dupla, deload, zonas de FC). Em nutrição, oriente calorias, macros, distribuição de proteína (0,3-0,4 g/kg por refeição), hidratação e alimentos; não prescreva medicamentos e só cite suplementos com boa evidência (creatina, whey, cafeína, vitamina D se deficiente).
+Segurança: diante de dor no peito, falta de ar desproporcional, tontura, PA ≥ 160/100, glicemia descontrolada ou dor articular aguda, oriente parar e procurar um médico. Você é um assistente digital e não substitui consulta presencial.
+Responda em português do Brasil, direto e motivador, em texto simples (sem markdown, sem tabelas), com listas curtas usando "-" quando ajudar.`;
+function coachContext() {
+  const a = latest(), P = plan();
+  return JSON.stringify({
+    aluno: { ...S.profile, idade: ageOf(S.profile.birth) },
+    ultima_avaliacao: a && { data: a.date, peso: a.weight, composicao: a.results.comp, gasto: a.results.energy, metas_nutricao: a.results.nutrition, zonas_fc: a.results.hr.zones, alertas: a.results.alerts.map(x => x.t), evolucao: a.results.progress, proxima: a.results.next },
+    historico_avaliacoes: S.assessments.map(x => ({ data: x.date, peso: x.weight, gordura: x.results.comp.bf, magra: x.results.comp.lean })),
+    ficha: P && P.days.map(d => ({ dia: d.label, exercicios: d.items.map(i => `${EX[i.id].n} ${i.sets}x${i.reps} desc ${i.rest}s`), cardio: `${EX[d.cardio.id].n} ${d.cardio.min} min ${d.cardio.zone.lo}-${d.cardio.zone.hi} bpm` })),
+    ultimos_treinos: S.workouts.slice(-10),
+  });
+}
+let sampleFn = null, coachBusy = false;
+function viewCoach() {
+  const msgs = S.chat.length ? S.chat : [{ role: "assistant", content: `Olá, ${S.profile.name}! Sou seu Coach. Posso ajustar sua ficha, explicar a execução de um exercício, montar um cardápio para suas metas ou analisar sua evolução. Como posso ajudar?` }];
+  return `<section class="block"><p class="label">Educação Física + Nutrição</p><h1>Coach</h1></section>
+    <div class="chat" id="chat">${msgs.map(m => `<div class="msg ${m.role}">${esc(m.content)}</div>`).join("")}</div>
+    ${S.chat.length ? "" : `<div class="chips">${["Como está minha evolução?", "Senti dor no ombro no supino, o que troco?", "Monte um cardápio para minhas metas de hoje", "Quanto cardio fazer esta semana?"].map(s => `<button type="button" data-ask="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}
+    <form class="composer" id="composer"><textarea id="ask" rows="2" placeholder="Pergunte ao Coach…" aria-label="Mensagem para o Coach"></textarea><button class="primary" type="submit" id="sendBtn">Enviar</button></form>
+    <p class="tiny muted" id="coachNote">O Coach é um assistente digital e não substitui médico, nutricionista ou profissional de Educação Física.</p>
+    ${S.chat.length ? `<button type="button" class="ghost small" onclick="S.chat=[];save();render()">Limpar conversa</button>` : ""}`;
+}
+function bindCoach() {
+  document.getElementById("composer").addEventListener("submit", e => { e.preventDefault(); ask(document.getElementById("ask").value); });
+  document.querySelectorAll("[data-ask]").forEach(b => b.addEventListener("click", () => ask(b.dataset.ask)));
+  const chat = document.getElementById("chat"); chat.lastElementChild?.scrollIntoView({ block: "end" });
+}
+async function ask(text) {
+  text = (text || "").trim(); if (!text || coachBusy) return;
+  if (!sampleFn) { try { sampleFn = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch (e) { sampleFn = null; } }
+  S.chat.push({ role: "user", content: text });
+  render();
+  const chat = document.getElementById("chat");
+  const out = document.createElement("div"); out.className = "msg assistant"; out.textContent = "Pensando…"; chat.appendChild(out); out.scrollIntoView({ block: "end" });
+  const fail = msg => { S.chat.push({ role: "assistant", content: msg }); coachBusy = false; render(); };
+  if (!sampleFn) { fail("O Coach com IA não está disponível nesta visualização. Abra o app pelo claude.ai com sua conta para conversar com ele."); return; }
+  coachBusy = true; document.getElementById("sendBtn").disabled = true;
+  const history = S.chat.filter(m => !m.error).slice(-12).map(m => ({ role: m.role, content: m.content }));
+  while (history.length && history[0].role !== "user") history.shift();
+  history[0] = { role: "user", content: `${COACH_PROMPT}\n\nDados atuais do aluno (JSON):\n${coachContext()}\n\n---\nMensagem do aluno: ${history[0].content}` };
+  try {
+    const res = await sampleFn(history, { cache: false, onText: u => { out.textContent = u.text || "Pensando…"; } });
+    S.chat.push({ role: "assistant", content: res.text }); save();
+    coachBusy = false; render();
+  } catch (e) {
+    S.chat.push({ role: "assistant", error: true, content: e && e.code === "not_granted" ? "Para conversar com o Coach, permita o acesso ao Claude quando o aviso aparecer." : e && e.code === "rate_limited" ? "Muitas mensagens seguidas. Espere um minuto e tente de novo." : "Não consegui responder agora. Tente de novo em instantes." });
+    coachBusy = false; render();
+  }
+}
+
+/* ------------------------------------------------------------------ Início */
+render();
+initStore();
+</script>
